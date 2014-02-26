@@ -8,13 +8,36 @@ import pygame as pg
 import pymunk as pk
 
 SCREEN_SIZE = (600, 800)
+WHITE = (255, 255, 255)
+ORANGE = (255, 128, 0)
+START_X = 100
+START_Y = 700
+GRAVITY = (0.0, -400)
 
 
 class Ball(object):
     """Ball that rolls down ramps"""
     def __init__(self, x, y):
-        self.body = body
-        self.shape = shape
+        self.mass = 1
+        self.radius = 14
+        self.inertia = pk.moment_for_circle(self.mass, 0, self.radius)
+        self.body = pk.Body(self.mass, self.inertia)
+        self.body.position = x, y
+        self.shape = pk.Circle(self.body, self.radius)
+
+    def update(self):
+        """Update ball information by converting pymunk coordinates
+        into pygame coordinates"""
+        self.x = int(self.body.position.x)
+        self.y = int(self.body.position.y * -1 + SCREEN_SIZE[1])
+
+    def draw(self, surface):
+        """Draws ball to a surface"""
+        circle_center = (self.x, self.y)
+        radius = int(self.radius)
+        pg.draw.circle(surface, ORANGE, circle_center, radius)
+
+
 
 class Ramp(object):
     """Ramp that the ball rolls on"""
@@ -27,10 +50,11 @@ class Control(object):
         self.screen = self.setup_pygame()
         self.screen_rect = self.screen.get_rect()
         self.space = pk.Space()
-        self.space.gravity = (0.0, -900)
+        self.space.gravity = GRAVITY
         self.done = False
         self.fps = 60
         self.current_time = 0.0
+        self.clock = pg.time.Clock()
         self.keys = pg.key.get_pressed()
 
         self.add_ramps_to_space()
@@ -50,14 +74,17 @@ class Control(object):
 
     def add_ball_to_space(self):
         """Add the ball to the level and space for physics"""
-        pass
+        self.ball = Ball(START_X, START_Y)
+        self.space.add(self.ball.body, self.ball.shape)
 
     def update(self):
         """Updates game"""
         while not self.done:
             self.get_user_input()
             self.current_time = pg.time.get_ticks()
+            self.screen.fill((255, 255, 255))
             self.update_space()
+            self.check_if_ball_off_screen()
             pg.display.update()
             self.clock.tick(self.fps)
 
@@ -73,7 +100,24 @@ class Control(object):
 
     def update_space(self):
         """Updates the physics simulation"""
-        pass
+        self.space.step(1/50.0)
+        self.ball.update()
+        self.ball.draw(self.screen)
+
+    def check_if_ball_off_screen(self):
+        """Checks if ball is no longer on screen.  If so,
+        the ball is deleted, and a new one is created"""
+        if self.ball.x > SCREEN_SIZE[0] or self.ball.x < 0:
+            self.reset_ball_position()
+        elif self.ball.y > SCREEN_SIZE[1] or self.ball.y < 0:
+            self.reset_ball_position()
+
+    def reset_ball_position(self):
+        """Deletes ball and resets it to original position"""
+        self.space.remove(self.ball.shape, self.ball.body)
+        self.ball = Ball(START_X, START_Y)
+        self.space.add(self.ball.body, self.ball.shape)
+
 
 
 if __name__ == '__main__':
