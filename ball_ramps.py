@@ -38,11 +38,24 @@ class Ball(object):
         pg.draw.circle(surface, ORANGE, circle_center, radius)
 
 
-
 class Ramp(object):
     """Ramp that the ball rolls on"""
     def __init__(self, x, y):
-        pass
+        self.body = pk.Body()
+        self.body.position = (x, y)
+        self.shape = pk.Segment(self.body, (x, y), (x+100, y), 5)
+        self.x = int(self.body.position.x)
+        self.y = int(self.body.position.y)
+
+    def draw(self, surface):
+        """Draws ramp to a surface"""
+        point_a = (int(self.shape.a[0]), 
+                  int(self.shape.a[1] * -1 + SCREEN_SIZE[1]))
+        point_b = (int(self.shape.b[1]),
+                  int(self.shape.b[1] * -1 + SCREEN_SIZE[1]))
+
+        pg.draw.line(surface, ORANGE, point_a, point_b, 5)
+
 
 class Control(object):
     """Controls the game"""
@@ -70,7 +83,8 @@ class Control(object):
 
     def add_ramps_to_space(self):
         """Add the ramps to build the level and space for physics"""
-        pass
+        self.ramp = Ramp(50, 200)
+        self.space.add(self.ramp.shape)
 
     def add_ball_to_space(self):
         """Add the ball to the level and space for physics"""
@@ -103,6 +117,7 @@ class Control(object):
         self.space.step(1/50.0)
         self.ball.update()
         self.ball.draw(self.screen)
+        self.ramp.draw(self.screen)
 
     def check_if_ball_off_screen(self):
         """Checks if ball is no longer on screen.  If so,
